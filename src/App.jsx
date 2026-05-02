@@ -14,6 +14,7 @@ export default function App() {
   const [tg, setTg] = useState(null)
   const [members, setMembers] = useState([])
   const [currentUserId, setCurrentUserId] = useState(null)
+  const [groupChatId, setGroupChatId] = useState(null)
 
   useEffect(() => {
     const telegram = window.Telegram?.WebApp
@@ -25,13 +26,15 @@ export default function App() {
       const user = telegram.initDataUnsafe?.user
       if (user) setCurrentUserId(user.id)
 
+      // Read startapp param passed by bot
       const startParam = telegram.initDataUnsafe?.start_param
       if (startParam) {
         try {
           const decoded = JSON.parse(atob(startParam))
           if (decoded.members) setMembers(decoded.members)
+          if (decoded.group_chat_id) setGroupChatId(decoded.group_chat_id)
         } catch (e) {
-          console.log('No members in startParam')
+          console.log('Could not parse startParam:', e)
         }
       }
     }
@@ -54,15 +57,20 @@ export default function App() {
 
   const handleConfirm = (invited) => {
     const final = {
-      ...booking,
+      type: 'create_booking',
+      date: booking.date,
+      time: booking.time,
+      court: booking.court,
+      group_chat_id: groupChatId,
       invited: invited.map(m => ({ user_id: m.user_id, username: m.username }))
     }
+
     if (tg) {
-      tg.sendData(JSON.stringify({ type: 'create_booking', ...final }))
+      tg.sendData(JSON.stringify(final))
     } else {
       console.log('Booking:', final)
+      setStep('success')
     }
-    setStep('success')
   }
 
   const handleBack = () => {
@@ -94,17 +102,10 @@ export default function App() {
           <Calendar onSelect={handleDateSelect} selectedDate={booking.date} />
         )}
         {step === 'time' && (
-          <TimePicker
-            onSelect={handleTimeSelect}
-            selectedTime={booking.time}
-            selectedDate={booking.date}
-          />
+          <TimePicker onSelect={handleTimeSelect} selectedTime={booking.time} selectedDate={booking.date} />
         )}
         {step === 'court' && (
-          <CourtPicker
-            onSelect={handleCourtSelect}
-            booking={booking}
-          />
+          <CourtPicker onSelect={handleCourtSelect} booking={booking} />
         )}
         {step === 'participants' && (
           <ParticipantPicker
