@@ -18,6 +18,8 @@ export default function App() {
 
   useEffect(() => {
     const telegram = window.Telegram?.WebApp
+    console.log('Telegram WebApp:', telegram)
+    console.log('initDataUnsafe:', telegram?.initDataUnsafe)
     if (telegram) {
       telegram.ready()
       telegram.expand()
@@ -26,8 +28,8 @@ export default function App() {
       const user = telegram.initDataUnsafe?.user
       if (user) setCurrentUserId(user.id)
 
-      // Read startapp param passed by bot
       const startParam = telegram.initDataUnsafe?.start_param
+      console.log('startParam:', startParam)
       if (startParam) {
         try {
           const decoded = JSON.parse(atob(startParam))
@@ -37,6 +39,8 @@ export default function App() {
           console.log('Could not parse startParam:', e)
         }
       }
+    } else {
+      console.log('Telegram WebApp NOT available')
     }
   }, [])
 
@@ -65,11 +69,14 @@ export default function App() {
       invited: invited.map(m => ({ user_id: m.user_id, username: m.username }))
     }
 
+    console.log('tg object:', tg)
+    console.log('Sending data:', JSON.stringify(final))
+
     if (tg) {
       tg.sendData(JSON.stringify(final))
     } else {
-      console.log('Booking:', final)
-      setStep('success')
+      console.log('TG IS NULL - cannot send data to bot')
+      alert('Error: Telegram WebApp not initialized. Please open this app through Telegram.')
     }
   }
 
